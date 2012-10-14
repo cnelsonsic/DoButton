@@ -109,7 +109,9 @@ void fade(int amount, int interval) {
 void handleButton() {
     // Wait for button-press
     // When pressed, send "PRESSED" via serial
-    // If not pressed, send "IM A BUTTON" once every second.
+    if (random(1, 1000000) == 10) {
+        Serial.println(ACTION);
+    }
 }
 
 void setState(int state) {
