@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import serial
 import time
 import os
 import sys
+
+import serial
 import sh
 
 SCRIPTDIR = "~/.dobutton/"
@@ -43,8 +44,15 @@ def main():
     while not s:
         for serial_dev in [dev for dev in os.listdir('/dev/') if 'usb' in dev]:
             try:
+                print("trying {0}".format(serial_dev))
                 s = serial.Serial('/dev/'+serial_dev, baudrate=9600, timeout=2)
-                if "IM A BUTTON" in s.readline():
+                print("Connected")
+                connected = False
+                while not connected:
+                    if "IM A BUTTON" in s.readline():
+                        print("FOUND A BUTTON")
+                        connected = True
+                if connected:
                     break
             except serial.serialutil.SerialException as exc:
                 # Couldn't connect, skip it.
