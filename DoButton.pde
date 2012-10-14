@@ -18,8 +18,8 @@ int THROBBING = 2;
 int FLASHING = 3;
 
 // Pin Settings
-int LED_PIN = 13;
-int BUTTON_PIN = 9;
+int LED_PIN = 5;
+int BUTTON_PIN = 7;
 
 // Global LED timing variables.
 int _led_state = 0; // Current logical state of the LED.
@@ -76,7 +76,7 @@ void handleLED() {
         fade(1, 1);
     }
     else if (LED_STATE == FLASHING) {
-        fade(255, 1000);
+        fade(255, 500);
     }
     else if (LED_STATE == ON) {
         analogWrite(LED_PIN, 255);
@@ -101,7 +101,7 @@ void fade(int amount, int interval) {
     }
 
     _led_state += (_led_direction * amount);
-    analogWrite(LED_PIN, _led_state);
+    analogWrite(LED_PIN, constrain(_led_state, 0, 255));
     delay(10);
   }
 }
@@ -112,23 +112,28 @@ void handleButton() {
     // If not pressed, send "IM A BUTTON" once every second.
 }
 
+void setState(int state) {
+    LED_STATE = state;
+    _led_state = 0; // When we change states, reset the LED brightness to 0.
+}
+
 // Handle serial stuff.
 void serialEvent() {
     // Got some data from the PC
     String result = getString();
     if (result == WORKING) {
         // If it's "WORKING", initiate LED throbbing protocol.
-        LED_STATE = THROBBING;
+        setState(THROBBING);
         Serial.println("THROBBING");
     }
     else if (result == ERROR) {
         // If it's "ERROR", flash the LED.
-        LED_STATE = FLASHING;
+        setState(FLASHING);
         Serial.println("FLASHING");
     }
     else if (result == SUCCESS) {
         // If it's "SUCCESS", set the LED to a constant on state.
-        LED_STATE = ON;
+        setState(ON);
         Serial.println("SUCCESS");
     }
     else {
