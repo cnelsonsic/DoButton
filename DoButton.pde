@@ -28,17 +28,17 @@ long _previous_millis = 0; // The last time the LED was updated.
 
 String getString() {
     int i = 0;
-    char commandbuffer[100];
+    char commandbuffer[20];
 
-    if(Serial.available()){
+    if (Serial.available()) {
         delay(100);
-        while( Serial.available() && i< 99) {
+        while (Serial.available() && i < 19) {
             commandbuffer[i++] = Serial.read();
         }
-        commandbuffer[i++]='\0';
+        commandbuffer[i++] = '\0';
     }
 
-    if(i>0) {
+    if (i > 0) {
         return String((char*)commandbuffer);
     }
 }
