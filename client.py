@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 import os
 import sys
+import logging
 
 import serial
 import sh
@@ -40,6 +41,8 @@ def get_executable():
     return [x for x in sh.glob(os.path.expanduser(SCRIPTDIR+"/*")) if os.access(x, os.X_OK)]
 
 def main():
+    logger = logging.getLogger('dobutton')
+
     s = None
     while not s:
         for serial_dev in [dev for dev in os.listdir('/dev/') if 'usb' in dev]:
@@ -82,9 +85,18 @@ def main():
                     run = sh.Command(command)
                     run()
                 except sh.ErrorReturnCode as exc:
-                    # If any error, send the error message and abandon the rest of the commands.
+                    # If any error in the executables...
+
+                    # Log it
                     print(exc.message)
+                    logger.error("ERROR: {0} exited with a nonzero exit status.".format(command))
+                    logger.error(exc.stdout)
+                    logger.error(exc.stderr)
+
+                    # And inform the button.
                     write(s, ERROR)
+
+                    # And give up running more commands.
                     break
             else:
                 # When they're all done, and they all succeed, send the success message.
