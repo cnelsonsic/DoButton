@@ -71,7 +71,11 @@ def main():
 
     # Get any button messages:
     while True:
-        line = s.readline()
+        try:
+            line = s.readline()
+        except OSError:
+            # Arduino got unplugged, so start over.
+            return main()
         if "PRESSED" in line:
             # Send a message to the button that it's working.
             write(s, WORKING)
