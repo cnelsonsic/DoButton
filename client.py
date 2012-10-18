@@ -4,8 +4,10 @@ import time
 import os
 import sys
 import logging
+import itertools
 
 import serial
+from serial.tools.list_ports import comports
 import sh
 
 SCRIPTDIR = "~/.dobutton/"
@@ -45,16 +47,22 @@ def main():
 
     s = None
     while not s:
-        for serial_dev in [dev for dev in os.listdir('/dev/') if 'usb' in dev]:
+        for serial_dev in set(itertools.chain.from_iterable(comports())):
             try:
-                print("trying {0}".format(serial_dev))
-                s = serial.Serial('/dev/'+serial_dev, baudrate=9600, timeout=2)
-                print("Connected")
+                print("Trying {0}".format(serial_dev))
+                s = serial.Serial(serial_dev, baudrate=9600, timeout=0.25)
                 connected = False
-                while not connected:
+                tries = 0
+                while tries < 3:
                     if "IM A BUTTON" in s.readline():
                         print("FOUND A BUTTON")
                         connected = True
+                        break
+                    tries += 1
+                else:
+                    s.close()
+                    continue
+
                 if connected:
                     break
             except serial.serialutil.SerialException as exc:
@@ -73,9 +81,11 @@ def main():
     while True:
         try:
             line = s.readline()
-        except OSError:
+        except (OSError, serial.serialutil.SerialException, ValueError) as exc:
+            print(exc.message)
             # Arduino got unplugged, so start over.
             return main()
+
         if "PRESSED" in line:
             # Send a message to the button that it's working.
             write(s, WORKING)

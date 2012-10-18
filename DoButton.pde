@@ -1,30 +1,34 @@
-int VERSION = 1;
-int SPEED = 9600;
+const int VERSION = 1;
+const int SPEED = 9600;
+const int BUTTON_DEBOUNCE = 1; // Seconds.
 
 // These are sent to the PC over serial and can be used to identify a DoButton.
-String HELO = "IM A BUTTON";
-String ACTION = "PRESSED";
+const String HELO = "IM A BUTTON";
+const String ACTION = "PRESSED";
 
 // These come in from the PC to tell us what's up.
-String WORKING = "WORKING";
-String ERROR = "ERROR";
-String SUCCESS = "SUCCESS";
+const String WORKING = "WORKING";
+const String ERROR = "ERROR";
+const String SUCCESS = "SUCCESS";
 
 // LED States
+const int OFF = 0;
+const int ON = 1;
+const int THROBBING = 2;
+const int FLASHING = 3;
 int LED_STATE;
-int OFF = 0;
-int ON = 1;
-int THROBBING = 2;
-int FLASHING = 3;
 
 // Pin Settings
-int LED_PIN = 5;
-int BUTTON_PIN = 7;
+const int LED_PIN = 5;
+const int BUTTON_PIN = 2;
 
 // Global LED timing variables.
 int _led_state = 0; // Current logical state of the LED.
 int _led_direction = 1; // Are we getting brighter or dimmer?
 long _previous_millis = 0; // The last time the LED was updated.
+
+// Global Button state variables.
+long _last_press = 0; // The last time the button was pressed.
 
 String getString() {
     int i = 0;
@@ -47,6 +51,7 @@ void setup() {
     // Initialize our LED
     LED_STATE = OFF;
     /* pinMode(LED_PIN, OUTPUT); */
+    pinMode(BUTTON_PIN, INPUT);
 
     // Enable serial communication.
     Serial.begin(SPEED);
@@ -64,7 +69,7 @@ long _last_notify;
 void notify() {
     // Notify the PC every second or so that we're a button.
     unsigned long currentMillis = millis();
-    if (currentMillis - _last_notify > 1000) {
+    if (currentMillis - _last_notify > BUTTON_DEBOUNCE*1000) {
         _last_notify = currentMillis;
         Serial.println(HELO);
     }
@@ -107,10 +112,16 @@ void fade(int amount, int interval) {
 }
 
 void handleButton() {
-    // Wait for button-press
     // When pressed, send "PRESSED" via serial
-    if (random(1, 1000000) == 10) {
-        Serial.println(ACTION);
+    if (digitalRead(BUTTON_PIN) == HIGH) {
+        // But only if the client's not busy.
+        if (LED_STATE != THROBBING) {
+            // And only if we're not hammering the button.
+            if (_last_press <= (millis() - 1000)) {
+                Serial.println(ACTION);
+                _last_press = millis();
+            }
+        }
     }
 }
 
