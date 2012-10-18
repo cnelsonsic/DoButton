@@ -35,7 +35,7 @@ def test(s):
         time.sleep(10)
 
 def write(s, msg):
-    print("Sending", msg.strip())
+    # print("Sending", msg.strip())
     assert s.write(msg) == len(msg)
 
 def get_executable():
@@ -49,14 +49,20 @@ def main():
     while not s:
         for serial_dev in set(itertools.chain.from_iterable(comports())):
             try:
-                print("Trying {0}".format(serial_dev))
+                # print("Trying {0}".format(serial_dev))
                 s = serial.Serial(serial_dev, baudrate=9600, timeout=0.25)
                 connected = False
                 tries = 0
                 while tries < 3:
                     if "IM A BUTTON" in s.readline():
-                        print("FOUND A BUTTON")
+                        # print("FOUND A BUTTON")
                         connected = True
+                        while True:
+                            write(s, SUCCESS)
+                            time.sleep(.1)
+                            if s.readline().strip() == "SUCCESS":
+                                print("DoButton found!")
+                                break
                         break
                     tries += 1
                 else:
@@ -67,26 +73,26 @@ def main():
                     break
             except serial.serialutil.SerialException as exc:
                 # Couldn't connect, skip it.
-                print("Couldn't connect to", serial_dev)
-                print(exc.message)
+                # print("Couldn't connect to", serial_dev)
+                # print(exc.message)
                 continue
         else:
             # Tried all the devices, so sleep a bit before trying again.
             time.sleep(1)
             print(".", end='')
             sys.stdout.flush()
-    print("Connected to arduino.")
 
     # Get any button messages:
     while True:
         try:
             line = s.readline()
         except (OSError, serial.serialutil.SerialException, ValueError) as exc:
-            print(exc.message)
+            # print(exc.message)
             # Arduino got unplugged, so start over.
             return main()
 
         if "PRESSED" in line:
+            line = None
             # Send a message to the button that it's working.
             write(s, WORKING)
 
@@ -95,9 +101,10 @@ def main():
                 try:
                     # Note: Don't background these, so they run in sequence
                     # and the "WORKING" message means something
-                    print("running", command)
+                    print("Running", command)
                     run = sh.Command(command)
                     run()
+                    print("Finished successfully.")
                 except sh.ErrorReturnCode as exc:
                     # If any error in the executables...
 
@@ -117,4 +124,5 @@ def main():
                 write(s, SUCCESS)
 
 if __name__ == "__main__":
+    print("Trying to find a DoButton...", end="")
     main()
